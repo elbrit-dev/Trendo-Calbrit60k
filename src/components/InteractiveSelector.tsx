@@ -56,8 +56,8 @@ export default function InteractiveSelector({ panels }: { panels: SelectorPanel[
         ))}
       </div>
 
-      {/* lg+: expanding-panels selector (desktop only) */}
-      <div className="hidden h-[600px] w-full gap-3 lg:flex">
+      {/* lg+: expanding-panels selector (desktop only) — flush, no gaps */}
+      <div className="hidden h-[600px] w-full overflow-hidden rounded-2xl border border-navy-100 shadow-card lg:flex">
         {panels.map((p, i) => {
           const isActive = i === active
           return (
@@ -69,7 +69,7 @@ export default function InteractiveSelector({ panels }: { panels: SelectorPanel[
               onClick={() => setActive(i)}
               aria-pressed={isActive}
               aria-label={p.title}
-              className="group relative h-full min-w-[3rem] overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-card outline-none transition-[flex-grow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:ring-2 focus-visible:ring-azure-500 focus-visible:ring-offset-2"
+              className="group relative h-full min-w-[3rem] overflow-hidden border-l border-navy-100 bg-white outline-none transition-[flex-grow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] first:border-l-0 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-azure-500"
               style={{ flexGrow: isActive ? 3.6 : 1 }}
             >
               <img
