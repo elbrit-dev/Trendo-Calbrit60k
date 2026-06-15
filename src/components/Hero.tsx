@@ -96,7 +96,7 @@ export default function Hero() {
             )}
           </div>
 
-          <div className="mt-4 max-w-sm text-center">
+          <div className="mx-auto mt-4 max-w-sm text-center">
             <p className="text-2xl font-semibold text-navy-900">
               A <span className="text-marine-600">pan-India</span> presence
             </p>
