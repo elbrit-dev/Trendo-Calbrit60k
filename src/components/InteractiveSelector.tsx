@@ -22,8 +22,8 @@ export default function InteractiveSelector({ panels }: { panels: SelectorPanel[
 
   return (
     <>
-      {/* Mobile: stacked full-width cards */}
-      <div className="flex flex-col gap-4 sm:hidden">
+      {/* Mobile + tablet: stacked full-width cards */}
+      <div className="flex flex-col gap-4 lg:hidden">
         {panels.map((p) => (
           <div
             key={p.title}
@@ -56,8 +56,8 @@ export default function InteractiveSelector({ panels }: { panels: SelectorPanel[
         ))}
       </div>
 
-      {/* sm+: expanding-panels selector */}
-      <div className="hidden h-[600px] w-full gap-3 sm:flex">
+      {/* lg+: expanding-panels selector (desktop only) */}
+      <div className="hidden h-[600px] w-full gap-3 lg:flex">
         {panels.map((p, i) => {
           const isActive = i === active
           return (
