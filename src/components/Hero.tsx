@@ -89,14 +89,14 @@ export default function Hero() {
             ) : (
               <img src={INDIA_IMG} alt="Map of India" className="h-full w-full object-contain" />
             )}
+          </div>
+
+          <div className="mx-auto mt-2 max-w-sm text-center lg:-translate-x-8">
             {show3D && (
-              <p className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 text-[11px] font-medium uppercase tracking-wider text-navy-300">
+              <p className="pointer-events-none mb-3 text-[11px] font-medium uppercase tracking-wider text-navy-300">
                 Move your cursor
               </p>
             )}
-          </div>
-
-          <div className="mx-auto mt-4 max-w-sm text-center lg:-translate-x-8">
             <p className="text-2xl font-semibold text-navy-900">
               A <span className="text-marine-600">pan-India</span> presence
             </p>
