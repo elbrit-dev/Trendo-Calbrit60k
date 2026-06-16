@@ -3,7 +3,8 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { calbrit } from '../data/calbrit'
 import { useShow3D } from '../three/util'
 import { Zap, Atom2, Droplet, Calendar, ArrowRight, Check, Sparkles, Beaker } from './Icons'
-import InteractiveSelector, { type SelectorPanel } from './InteractiveSelector'
+import { type SelectorPanel } from './InteractiveSelector'
+import CircularGallery from './CircularGallery'
 
 const NanoCanvas = lazy(() => import('../three/NanoCanvas'))
 
@@ -172,9 +173,9 @@ export default function Calbrit60K() {
           </motion.div>
         </div>
 
-        {/* Real product visuals from Canva — interactive expanding panels */}
+        {/* Real product visuals from Canva — 3D circular gallery */}
         <motion.div {...reveal()} className="mt-14">
-          <InteractiveSelector panels={CALBRIT_PANELS} />
+          <CircularGallery panels={CALBRIT_PANELS} />
         </motion.div>
 
         {/* HydroX explainer + particle comparison */}
