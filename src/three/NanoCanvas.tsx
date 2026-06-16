@@ -75,9 +75,14 @@ function Nanoparticle() {
 
 export default function NanoCanvas() {
   const [ref, inView] = useInView<HTMLDivElement>()
+  // On touch devices, drop OrbitControls — it forces touch-action:none and traps
+  // vertical scroll over the canvas. The nanoparticle still spins on its own via
+  // the useFrame rotation + Float, and the page scrolls normally.
+  const isTouch =
+    typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
   return (
-    <div ref={ref} className="h-full w-full">
-    <Canvas frameloop={inView ? 'always' : 'never'} camera={{ position: [0, 0, 7], fov: 45 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }} aria-hidden>
+    <div ref={ref} className="h-full w-full touch-pan-y">
+    <Canvas frameloop={inView ? 'always' : 'never'} camera={{ position: [0, 0, 7], fov: 45 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }} style={{ touchAction: 'pan-y' }} aria-hidden>
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 6, 5]} intensity={1.1} />
       <pointLight position={[-4, -2, 3]} intensity={30} color="#38b2e8" distance={18} />
@@ -87,14 +92,16 @@ export default function NanoCanvas() {
         <Nanoparticle />
       </Float>
 
-      <OrbitControls
-        makeDefault
-        enablePan={false}
-        enableZoom={false}
-        autoRotate={false}
-        minPolarAngle={Math.PI / 3}
-        maxPolarAngle={(2 * Math.PI) / 3}
-      />
+      {!isTouch && (
+        <OrbitControls
+          makeDefault
+          enablePan={false}
+          enableZoom={false}
+          autoRotate={false}
+          minPolarAngle={Math.PI / 3}
+          maxPolarAngle={(2 * Math.PI) / 3}
+        />
+      )}
     </Canvas>
     </div>
   )

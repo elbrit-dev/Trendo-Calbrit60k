@@ -5,21 +5,31 @@ import { Close, ArrowRight } from './Icons'
 
 /**
  * 3D circular (cylinder) gallery — the Calbrit slides arranged around a ring in
- * perspective. Drag / swipe to rotate; it auto-rotates slowly when idle. Click
- * a card (without dragging) to open a full-size lightbox carousel that pops in
- * with a 3D effect.
+ * perspective. Drag / swipe to rotate; it auto-rotates while idle. Click a card
+ * (quick, no drag) to open a full-size lightbox that pops in with a 3D effect.
+ *
+ * Rotation is applied imperatively (refs + a single rAF) so it stays smooth on
+ * mobile — no per-frame React re-render. Speed is time-based (deg/sec), so it
+ * looks the same regardless of frame rate.
  */
+const DEG_PER_SEC = 16
+
 export default function CircularGallery({ panels }: { panels: SelectorPanel[] }) {
-  const [rotation, setRotation] = useState(0)
   const [active, setActive] = useState(0)
   const [lightbox, setLightbox] = useState<number | null>(null)
+
+  const ringRef = useRef<HTMLDivElement>(null)
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+  const rotationRef = useRef(0)
+  const activeRef = useRef(0)
+  const lightboxRef = useRef<number | null>(null)
+
   const draggingRef = useRef(false)
   const pointerDownRef = useRef(false)
   const interactingRef = useRef(false)
   const lastXRef = useRef(0)
   const movedRef = useRef(0)
   const downTimeRef = useRef(0)
-  const rafRef = useRef<number | null>(null)
   const idleTimerRef = useRef<number | null>(null)
   const reduceRef = useRef(false)
   const lbStartX = useRef(0)
@@ -28,28 +38,57 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   const anglePer = 360 / count
 
   useEffect(() => {
+    lightboxRef.current = lightbox
+  }, [lightbox])
+
+  useEffect(() => {
     reduceRef.current = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   }, [])
 
-  // Gentle auto-rotation while idle (paused while a lightbox is open).
+  // Single imperative render loop — writes the transform/opacity directly to the
+  // DOM (no setState per frame). Only the front-card index goes through React.
   useEffect(() => {
-    const tick = () => {
-      if (!draggingRef.current && !interactingRef.current && !reduceRef.current && lightbox === null) {
-        setRotation((r) => r + 0.12)
-      }
-      rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [lightbox])
+    let raf = 0
+    let lastTs = 0
+    const render = (ts: number) => {
+      if (!lastTs) lastTs = ts
+      const dt = Math.min(ts - lastTs, 50)
+      lastTs = ts
 
-  // Keep the front-facing panel's index in sync.
-  useEffect(() => {
-    const norm = ((-rotation / anglePer) % count + count) % count
-    setActive(Math.round(norm) % count)
-  }, [rotation, anglePer, count])
+      if (
+        !draggingRef.current &&
+        !interactingRef.current &&
+        !reduceRef.current &&
+        lightboxRef.current === null
+      ) {
+        rotationRef.current += (DEG_PER_SEC * dt) / 1000
+      }
+
+      const rot = rotationRef.current
+      if (ringRef.current) ringRef.current.style.transform = `rotateY(${rot}deg)`
+
+      let frontIdx = 0
+      let frontNorm = 999
+      for (let i = 0; i < count; i++) {
+        const rel = (((i * anglePer + rot) % 360) + 360) % 360
+        const norm = rel > 180 ? 360 - rel : rel
+        const el = cardRefs.current[i]
+        if (el) el.style.opacity = String(Math.max(0.45, 1 - norm / 220))
+        if (norm < frontNorm) {
+          frontNorm = norm
+          frontIdx = i
+        }
+      }
+      if (frontIdx !== activeRef.current) {
+        activeRef.current = frontIdx
+        setActive(frontIdx)
+      }
+
+      raf = requestAnimationFrame(render)
+    }
+    raf = requestAnimationFrame(render)
+    return () => cancelAnimationFrame(raf)
+  }, [count, anglePer])
 
   const pauseAuto = () => {
     interactingRef.current = true
@@ -71,12 +110,10 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     const dx = e.clientX - lastXRef.current
     lastXRef.current = e.clientX
     movedRef.current += Math.abs(dx)
-    // Only a real drag (movement) takes over rotation — a still press/long-press
-    // leaves the gallery circulating on its own.
     if (movedRef.current > 6) draggingRef.current = true
     if (draggingRef.current) {
       pauseAuto()
-      setRotation((r) => r + dx * 0.45)
+      rotationRef.current += dx * 0.45
     }
   }
   const onPointerUp = () => {
@@ -90,11 +127,9 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   const goTo = (i: number) => {
     pauseAuto()
     // Rotate so panel i faces front, taking the shortest path.
-    setRotation((r) => {
-      const target = -i * anglePer
-      const diff = ((target - r) % 360 + 540) % 360 - 180
-      return r + diff
-    })
+    const target = -i * anglePer
+    const diff = ((target - rotationRef.current) % 360 + 540) % 360 - 180
+    rotationRef.current += diff
   }
 
   const lbPrev = () => setLightbox((i) => (i === null ? i : (i - 1 + count) % count))
@@ -124,77 +159,65 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
         style={{ perspective: '2200px' }}
       >
         <div
+          ref={ringRef}
           className="relative h-[340px] w-[230px] [--radius:230px] sm:h-[420px] sm:w-[300px] sm:[--radius:330px]"
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: `rotateY(${rotation}deg)`,
-          }}
+          style={{ transformStyle: 'preserve-3d' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          {panels.map((p, i) => {
-            const itemAngle = i * anglePer
-            const rel = (((itemAngle + rotation) % 360) + 360) % 360
-            const norm = rel > 180 ? 360 - rel : rel
-            const opacity = Math.max(0.45, 1 - norm / 220)
-            const isFront = norm < anglePer / 2
-            return (
-              <div
-                key={p.image}
-                role="group"
-                aria-label={p.title}
-                className="absolute inset-0"
-                style={{
-                  transform: `rotateY(${itemAngle}deg) translateZ(var(--radius))`,
-                  opacity,
-                  transition: draggingRef.current ? 'none' : 'opacity 0.3s linear',
+          {panels.map((p, i) => (
+            <div
+              key={p.image}
+              ref={(el) => (cardRefs.current[i] = el)}
+              role="group"
+              aria-label={p.title}
+              className="absolute inset-0"
+              style={{ transform: `rotateY(${i * anglePer}deg) translateZ(var(--radius))` }}
+            >
+              <button
+                type="button"
+                // Open only on a real click: tiny movement AND a quick press
+                // (long-press / drag must not open the lightbox).
+                onClick={() => {
+                  if (movedRef.current < 8 && Date.now() - downTimeRef.current < 300) {
+                    setLightbox(i)
+                  }
                 }}
+                aria-label={`Enlarge ${p.title}`}
+                className="block h-full w-full cursor-pointer overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-card outline-none focus-visible:ring-2 focus-visible:ring-azure-500"
               >
-                <button
-                  type="button"
-                  // Open only on a real click: negligible drag AND a quick press
-                  // (a long-press or drag must not open the lightbox).
-                  onClick={() => {
-                    if (movedRef.current < 8 && Date.now() - downTimeRef.current < 300) {
-                      setLightbox(i)
-                    }
+                <img
+                  src={p.image}
+                  alt={p.alt}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  draggable={false}
+                  decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.style.visibility = 'hidden'
                   }}
-                  aria-label={`Enlarge ${p.title}`}
-                  className="block h-full w-full cursor-pointer overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-card outline-none focus-visible:ring-2 focus-visible:ring-azure-500"
-                >
-                  <img
-                    src={p.image}
-                    alt={p.alt}
-                    className="absolute inset-0 h-full w-full object-cover"
-                    draggable={false}
-                    decoding="async"
-                    onError={(e) => {
-                      e.currentTarget.style.visibility = 'hidden'
-                    }}
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/85 via-navy-900/40 to-transparent p-4 text-left text-white">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 backdrop-blur">
-                        <p.Icon className="h-4 w-4" />
-                      </span>
-                      <span className="block truncate text-sm font-semibold leading-tight">
-                        {p.title}
-                      </span>
-                    </div>
-                    <p
-                      className={`mt-1 truncate text-[11px] text-white/85 transition-opacity ${
-                        isFront ? 'opacity-100' : 'opacity-0'
-                      }`}
-                    >
-                      {p.description}
-                    </p>
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/85 via-navy-900/40 to-transparent p-4 text-left text-white">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 backdrop-blur">
+                      <p.Icon className="h-4 w-4" />
+                    </span>
+                    <span className="block truncate text-sm font-semibold leading-tight">
+                      {p.title}
+                    </span>
                   </div>
-                </button>
-              </div>
-            )
-          })}
+                  <p
+                    className={`mt-1 truncate text-[11px] text-white/85 transition-opacity ${
+                      i === active ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    {p.description}
+                  </p>
+                </div>
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
