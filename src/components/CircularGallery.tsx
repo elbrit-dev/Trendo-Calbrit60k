@@ -17,6 +17,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   const interactingRef = useRef(false)
   const lastXRef = useRef(0)
   const movedRef = useRef(0)
+  const downTimeRef = useRef(0)
   const rafRef = useRef<number | null>(null)
   const idleTimerRef = useRef<number | null>(null)
   const reduceRef = useRef(false)
@@ -60,6 +61,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   const onPointerDown = (e: React.PointerEvent) => {
     draggingRef.current = true
     movedRef.current = 0
+    downTimeRef.current = Date.now()
     lastXRef.current = e.clientX
     pauseAuto()
   }
@@ -142,9 +144,12 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
               >
                 <button
                   type="button"
-                  // Open the lightbox only on a click (negligible drag movement).
+                  // Open only on a real click: negligible drag AND a quick press
+                  // (a long-press or drag must not open the lightbox).
                   onClick={() => {
-                    if (movedRef.current < 8) setLightbox(i)
+                    if (movedRef.current < 8 && Date.now() - downTimeRef.current < 300) {
+                      setLightbox(i)
+                    }
                   }}
                   aria-label={`Enlarge ${p.title}`}
                   className="block h-full w-full cursor-pointer overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-card outline-none focus-visible:ring-2 focus-visible:ring-azure-500"
