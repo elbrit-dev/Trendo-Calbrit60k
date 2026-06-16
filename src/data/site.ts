@@ -14,8 +14,8 @@ export const site = {
   },
   contact: {
     addressLines: ['Elbrit Life Sciences Pvt Ltd', 'Coimbatore, Tamil Nadu, India'],
-    email: 'it@elbrit.org',
-    phone: '+91 00000 00000', // placeholder
+    email: 'hr@elbrit.org',
+    phone: '+91 73584 19644',
   },
   therapeuticAreas: ['Diabetes', 'Cardiovascular', 'Neurology', 'Bone Health', "Women's Health"],
 } as const
