@@ -80,15 +80,12 @@ export default function Calbrit60K() {
         {/* Hero of the section */}
         <div className="mt-8 grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
           <div>
-            <motion.h2
+            <motion.img
               {...reveal(0.05)}
-              className="text-4xl font-semibold leading-[1.05] text-navy-900 sm:text-5xl lg:text-6xl"
-            >
-              <span className="text-azure-600">Calbrit</span>{' '}
-              <span className="relative inline-block rounded-lg bg-amber60k-500 px-2.5 py-0.5 text-white">
-                60K
-              </span>
-            </motion.h2>
+              src="/assets/calbrit-60k-logo.jpg"
+              alt="Calbrit 60K"
+              className="h-auto w-60 sm:w-72 lg:w-80"
+            />
             <motion.p {...reveal(0.1)} className="mt-4 text-lg font-medium text-navy-800">
               {calbrit.molecule} · {calbrit.form}
             </motion.p>
