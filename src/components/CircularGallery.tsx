@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import type { SelectorPanel } from './InteractiveSelector'
 import { Close, ArrowRight } from './Icons'
 
 /**
  * 3D circular (cylinder) gallery — the Calbrit slides arranged around a ring in
- * perspective. Drag / swipe to rotate; it auto-rotates slowly when idle. Tap a
- * card (without dragging) to open a full-size lightbox carousel.
+ * perspective. Drag / swipe to rotate; it auto-rotates slowly when idle. Click
+ * a card (without dragging) to open a full-size lightbox carousel that pops in
+ * with a 3D effect.
  */
 export default function CircularGallery({ panels }: { panels: SelectorPanel[] }) {
   const [rotation, setRotation] = useState(0)
@@ -15,7 +17,6 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   const interactingRef = useRef(false)
   const lastXRef = useRef(0)
   const movedRef = useRef(0)
-  const activeRef = useRef(0)
   const rafRef = useRef<number | null>(null)
   const idleTimerRef = useRef<number | null>(null)
   const reduceRef = useRef(false)
@@ -45,9 +46,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   // Keep the front-facing panel's index in sync.
   useEffect(() => {
     const norm = ((-rotation / anglePer) % count + count) % count
-    const i = Math.round(norm) % count
-    activeRef.current = i
-    setActive(i)
+    setActive(Math.round(norm) % count)
   }, [rotation, anglePer, count])
 
   const pauseAuto = () => {
@@ -63,7 +62,6 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     movedRef.current = 0
     lastXRef.current = e.clientX
     pauseAuto()
-    e.currentTarget.setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: React.PointerEvent) => {
     if (!draggingRef.current) return
@@ -73,11 +71,8 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     setRotation((r) => r + dx * 0.45)
   }
   const onPointerUp = () => {
-    if (!draggingRef.current) return
     draggingRef.current = false
     pauseAuto()
-    // A tap (negligible movement) opens the lightbox on the front card.
-    if (movedRef.current < 8) setLightbox(activeRef.current)
   }
 
   const goTo = (i: number) => {
@@ -114,14 +109,13 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     <div className="w-full">
       <div
         className="relative mx-auto flex touch-pan-y items-center justify-center"
-        style={{ perspective: '1600px' }}
+        style={{ perspective: '2200px' }}
       >
         <div
-          className="relative h-[340px] w-[230px] cursor-pointer [--radius:230px] sm:h-[420px] sm:w-[300px] sm:[--radius:330px]"
+          className="relative h-[340px] w-[230px] [--radius:230px] sm:h-[420px] sm:w-[300px] sm:[--radius:330px]"
           style={{
             transformStyle: 'preserve-3d',
             transform: `rotateY(${rotation}deg)`,
-            willChange: 'transform',
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -132,7 +126,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
             const itemAngle = i * anglePer
             const rel = (((itemAngle + rotation) % 360) + 360) % 360
             const norm = rel > 180 ? 360 - rel : rel
-            const opacity = Math.max(0.22, 1 - norm / 170)
+            const opacity = Math.max(0.45, 1 - norm / 220)
             const isFront = norm < anglePer / 2
             return (
               <div
@@ -146,19 +140,26 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
                   transition: draggingRef.current ? 'none' : 'opacity 0.3s linear',
                 }}
               >
-                <div className="relative h-full w-full overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-card">
+                <button
+                  type="button"
+                  // Open the lightbox only on a click (negligible drag movement).
+                  onClick={() => {
+                    if (movedRef.current < 8) setLightbox(i)
+                  }}
+                  aria-label={`Enlarge ${p.title}`}
+                  className="block h-full w-full cursor-pointer overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-card outline-none focus-visible:ring-2 focus-visible:ring-azure-500"
+                >
                   <img
                     src={p.image}
                     alt={p.alt}
                     className="absolute inset-0 h-full w-full object-cover"
                     draggable={false}
-                    loading="lazy"
                     decoding="async"
                     onError={(e) => {
                       e.currentTarget.style.visibility = 'hidden'
                     }}
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/85 via-navy-900/40 to-transparent p-4 text-white">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/85 via-navy-900/40 to-transparent p-4 text-left text-white">
                     <div className="flex items-center gap-2">
                       <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 backdrop-blur">
                         <p.Icon className="h-4 w-4" />
@@ -175,7 +176,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
                       {p.description}
                     </p>
                   </div>
-                </div>
+                </button>
               </div>
             )
           })}
@@ -185,7 +186,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
       {/* Hint + dot navigation */}
       <div className="mt-6 flex flex-col items-center gap-3">
         <p className="text-[11px] font-medium uppercase tracking-wider text-navy-400">
-          Drag to rotate · tap to enlarge
+          Drag to rotate · click to enlarge
         </p>
         <div className="flex items-center gap-2">
           {panels.map((p, i) => (
@@ -203,76 +204,90 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
         </div>
       </div>
 
-      {/* Lightbox carousel */}
-      {lightbox !== null && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-navy-950/90 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label={panels[lightbox].title}
-          onClick={() => setLightbox(null)}
-        >
-          <button
-            type="button"
+      {/* Lightbox carousel — pops in with a 3D effect */}
+      <AnimatePresence>
+        {lightbox !== null && (
+          <motion.div
+            key="lightbox"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-navy-950/90 p-4 backdrop-blur-sm"
+            style={{ perspective: '1400px' }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={panels[lightbox].title}
             onClick={() => setLightbox(null)}
-            aria-label="Close"
-            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
-            <Close className="h-6 w-6" />
-          </button>
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              aria-label="Close"
+              className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <Close className="h-6 w-6" />
+            </button>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              lbPrev()
-            }}
-            aria-label="Previous"
-            className="absolute left-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:left-6"
-          >
-            <ArrowRight className="h-6 w-6 rotate-180" />
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                lbPrev()
+              }}
+              aria-label="Previous"
+              className="absolute left-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:left-6"
+            >
+              <ArrowRight className="h-6 w-6 rotate-180" />
+            </button>
 
-          <figure
-            className="flex max-h-[90vh] max-w-3xl flex-col items-center"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => {
-              lbStartX.current = e.clientX
-            }}
-            onPointerUp={(e) => {
-              const dx = e.clientX - lbStartX.current
-              if (dx > 50) lbPrev()
-              else if (dx < -50) lbNext()
-            }}
-          >
-            <img
-              src={panels[lightbox].image}
-              alt={panels[lightbox].alt}
-              className="max-h-[78vh] w-auto max-w-full select-none rounded-xl bg-white object-contain shadow-2xl"
-              draggable={false}
-            />
-            <figcaption className="mt-4 text-center text-white">
-              <p className="text-base font-semibold">{panels[lightbox].title}</p>
-              <p className="text-sm text-white/70">{panels[lightbox].description}</p>
-              <p className="mt-1 text-xs text-white/50">
-                {lightbox + 1} / {count}
-              </p>
-            </figcaption>
-          </figure>
+            <motion.figure
+              key={lightbox}
+              initial={{ rotateX: -22, rotateY: 10, scale: 0.82, opacity: 0 }}
+              animate={{ rotateX: 0, rotateY: 0, scale: 1, opacity: 1 }}
+              exit={{ rotateX: 14, scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+              className="flex max-h-[90vh] max-w-3xl flex-col items-center"
+              style={{ transformStyle: 'preserve-3d' }}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => {
+                lbStartX.current = e.clientX
+              }}
+              onPointerUp={(e) => {
+                const dx = e.clientX - lbStartX.current
+                if (dx > 50) lbPrev()
+                else if (dx < -50) lbNext()
+              }}
+            >
+              <img
+                src={panels[lightbox].image}
+                alt={panels[lightbox].alt}
+                className="max-h-[78vh] w-auto max-w-full select-none rounded-xl bg-white object-contain shadow-2xl"
+                draggable={false}
+              />
+              <figcaption className="mt-4 text-center text-white">
+                <p className="text-base font-semibold">{panels[lightbox].title}</p>
+                <p className="text-sm text-white/70">{panels[lightbox].description}</p>
+                <p className="mt-1 text-xs text-white/50">
+                  {lightbox + 1} / {count}
+                </p>
+              </figcaption>
+            </motion.figure>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              lbNext()
-            }}
-            aria-label="Next"
-            className="absolute right-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:right-6"
-          >
-            <ArrowRight className="h-6 w-6" />
-          </button>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                lbNext()
+              }}
+              aria-label="Next"
+              className="absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:right-6"
+            >
+              <ArrowRight className="h-6 w-6" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
