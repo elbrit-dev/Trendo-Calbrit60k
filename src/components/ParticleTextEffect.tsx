@@ -4,13 +4,17 @@ type RGB = { r: number; g: number; b: number }
 type Vec = { x: number; y: number }
 
 // Brand palette — navy-900 and marine-600 (Elbrit red).
-const BRAND_COLORS: RGB[] = [
-  { r: 11, g: 37, b: 69 },
-  { r: 193, g: 20, b: 26 },
-]
+const COLORS: Record<'navy' | 'marine', RGB> = {
+  navy: { r: 11, g: 37, b: 69 },
+  marine: { r: 193, g: 20, b: 26 },
+}
 
 // Particles fade out into the white background when killed.
 const WHITE: RGB = { r: 255, g: 255, b: 255 }
+
+export type ParticleFrame =
+  | { kind: 'text'; value: string; color?: 'navy' | 'marine' }
+  | { kind: 'image'; src: string; color?: 'navy' | 'marine' }
 
 class Particle {
   pos: Vec = { x: 0, y: 0 }
@@ -24,8 +28,8 @@ class Particle {
   particleSize = 10
   isKilled = false
 
-  startColor: RGB = { r: 255, g: 255, b: 255 }
-  targetColor: RGB = { r: 255, g: 255, b: 255 }
+  startColor: RGB = { ...WHITE }
+  targetColor: RGB = { ...WHITE }
   colorWeight = 0
   colorBlendRate = 0.01
 
@@ -98,49 +102,78 @@ function randomEdgePos(x: number, y: number, mag: number, w: number, h: number):
 }
 
 interface Props {
-  words: string[]
-  /** Frames each word stays before morphing to the next (~60fps). */
+  frames: ParticleFrame[]
+  /** Frames each item stays before morphing to the next (~60fps). */
   holdFrames?: number
   className?: string
 }
 
-export default function ParticleTextEffect({ words, holdFrames = 260, className }: Props) {
+export default function ParticleTextEffect({ frames, holdFrames = 300, className }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>()
   const particlesRef = useRef<Particle[]>([])
-  const frameRef = useRef(0)
-  const wordRef = useRef(0)
+  const frameCountRef = useRef(0)
+  const indexRef = useRef(0)
+  const imagesRef = useRef<Record<string, HTMLImageElement>>({})
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    canvas.width = 1100
-    canvas.height = 420
+    canvas.width = 840
+    canvas.height = 720
     const ctx = canvas.getContext('2d')!
-
     const pixelSteps = 6
 
-    const nextWord = (word: string) => {
+    // Preload any image frames.
+    for (const f of frames) {
+      if (f.kind === 'image' && !imagesRef.current[f.src]) {
+        const img = new Image()
+        img.src = f.src
+        imagesRef.current[f.src] = img
+      }
+    }
+
+    // Render a frame to an offscreen canvas and return its alpha pixel data.
+    const renderFrame = (frame: ParticleFrame): Uint8ClampedArray | null => {
       const off = document.createElement('canvas')
       off.width = canvas.width
       off.height = canvas.height
       const octx = off.getContext('2d')!
 
-      // Fit the font to the canvas width.
-      let fontSize = 150
-      octx.font = `bold ${fontSize}px Arial`
-      octx.textAlign = 'center'
-      octx.textBaseline = 'middle'
-      while (octx.measureText(word).width > canvas.width * 0.88 && fontSize > 24) {
-        fontSize -= 4
+      if (frame.kind === 'text') {
+        let fontSize = 150
         octx.font = `bold ${fontSize}px Arial`
+        octx.textAlign = 'center'
+        octx.textBaseline = 'middle'
+        while (octx.measureText(frame.value).width > canvas.width * 0.86 && fontSize > 24) {
+          fontSize -= 4
+          octx.font = `bold ${fontSize}px Arial`
+        }
+        octx.fillStyle = 'white'
+        octx.fillText(frame.value, canvas.width / 2, canvas.height / 2)
+      } else {
+        const img = imagesRef.current[frame.src]
+        if (!img || !img.complete || img.naturalWidth === 0) return null
+        const iw = img.naturalWidth || 600
+        const ih = img.naturalHeight || 600
+        const scale = Math.min((canvas.width * 0.8) / iw, (canvas.height * 0.88) / ih)
+        const dw = iw * scale
+        const dh = ih * scale
+        octx.drawImage(img, (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh)
       }
-      octx.fillStyle = 'white'
-      octx.fillText(word, canvas.width / 2, canvas.height / 2)
+      return octx.getImageData(0, 0, canvas.width, canvas.height).data
+    }
 
-      const pixels = octx.getImageData(0, 0, canvas.width, canvas.height).data
-      const newColor = BRAND_COLORS[wordRef.current % BRAND_COLORS.length]
+    const nextFrame = (frame: ParticleFrame) => {
+      const pixels = renderFrame(frame)
       const particles = particlesRef.current
+      if (!pixels) {
+        // Image not ready yet — clear the field and try again next tick.
+        for (const p of particles) p.kill(canvas.width, canvas.height)
+        return
+      }
+
+      const newColor = COLORS[frame.color ?? (indexRef.current % 2 === 0 ? 'navy' : 'marine')]
       let pi = 0
 
       const idxs: number[] = []
@@ -151,7 +184,7 @@ export default function ParticleTextEffect({ words, holdFrames = 260, className 
       }
 
       for (const idx of idxs) {
-        if (pixels[idx + 3] <= 0) continue
+        if (pixels[idx + 3] <= 40) continue
         const x = (idx / 4) % canvas.width
         const y = Math.floor(idx / 4 / canvas.width)
 
@@ -162,7 +195,13 @@ export default function ParticleTextEffect({ words, holdFrames = 260, className 
           pi++
         } else {
           particle = new Particle()
-          const rp = randomEdgePos(canvas.width / 2, canvas.height / 2, (canvas.width + canvas.height) / 2, canvas.width, canvas.height)
+          const rp = randomEdgePos(
+            canvas.width / 2,
+            canvas.height / 2,
+            (canvas.width + canvas.height) / 2,
+            canvas.width,
+            canvas.height,
+          )
           particle.pos.x = rp.x
           particle.pos.y = rp.y
           particle.maxSpeed = Math.random() * 6 + 4
@@ -184,7 +223,6 @@ export default function ParticleTextEffect({ words, holdFrames = 260, className 
 
     const animate = () => {
       const particles = particlesRef.current
-      // White trailing fade — leaves a soft comet trail on the light hero.
       ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
@@ -197,29 +235,29 @@ export default function ParticleTextEffect({ words, holdFrames = 260, className 
         }
       }
 
-      frameRef.current++
-      if (frameRef.current % holdFrames === 0) {
-        wordRef.current = (wordRef.current + 1) % words.length
-        nextWord(words[wordRef.current])
+      frameCountRef.current++
+      if (frameCountRef.current % holdFrames === 0) {
+        indexRef.current = (indexRef.current + 1) % frames.length
+        nextFrame(frames[indexRef.current])
       }
       rafRef.current = requestAnimationFrame(animate)
     }
 
-    nextWord(words[0])
+    nextFrame(frames[0])
     animate()
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       particlesRef.current = []
-      frameRef.current = 0
-      wordRef.current = 0
+      frameCountRef.current = 0
+      indexRef.current = 0
     }
-  }, [words, holdFrames])
+  }, [frames, holdFrames])
 
   return (
     <canvas
       ref={canvasRef}
-      aria-label={words.join(', ')}
+      aria-label={frames.map((f) => (f.kind === 'text' ? f.value : 'Map of India')).join(', ')}
       role="img"
       className={className}
       style={{ display: 'block', width: '100%', height: 'auto' }}

@@ -1,16 +1,18 @@
-import { lazy, Suspense } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { site } from '../data/site'
 import { ArrowRight } from './Icons'
-import { useShow3D } from '../three/util'
-import ParticleTextEffect from './ParticleTextEffect'
+import ParticleTextEffect, { type ParticleFrame } from './ParticleTextEffect'
 
-const HeroCanvas = lazy(() => import('../three/HeroCanvas'))
 const INDIA_IMG = '/assets/india-map-country-svgrepo-com.svg'
+
+const HERO_FRAMES: ParticleFrame[] = [
+  { kind: 'text', value: 'A pan-India', color: 'navy' },
+  { kind: 'text', value: 'Celebrating 12 Years', color: 'marine' },
+  { kind: 'image', src: INDIA_IMG, color: 'marine' },
+]
 
 export default function Hero() {
   const reduce = useReducedMotion()
-  const show3D = useShow3D()
 
   const fadeUp = (delay: number) => ({
     initial: reduce ? false : { opacity: 0, y: 16 },
@@ -79,30 +81,18 @@ export default function Hero() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto flex w-full max-w-md flex-col items-center lg:max-w-none"
         >
-          {/* India as a real, rotatable 3D solid */}
-          <div className="relative aspect-square w-full">
-            {show3D ? (
-              <Suspense
-                fallback={<img src={INDIA_IMG} alt="Map of India" className="h-full w-full object-contain" />}
-              >
-                <HeroCanvas />
-              </Suspense>
-            ) : (
-              <img src={INDIA_IMG} alt="Map of India" className="h-full w-full object-contain" />
-            )}
-          </div>
-
-          {/* Cycling particle text: brand phrases form, dissolve, and reform */}
-          <div className="mt-2 w-full lg:-translate-x-8">
-            {reduce ? (
-              <p className="text-center text-2xl font-semibold text-navy-900">
+          {/* Particle field cycles: "A pan-India" -> "Celebrating 12 Years" -> India map -> loop */}
+          {reduce ? (
+            <div className="text-center">
+              <img src={INDIA_IMG} alt="Map of India" className="mx-auto w-2/3 object-contain" />
+              <p className="mt-4 text-2xl font-semibold text-navy-900">
                 A <span className="text-marine-600">pan-India</span> presence ·{' '}
                 <span className="text-marine-600">Celebrating 12 Years</span>
               </p>
-            ) : (
-              <ParticleTextEffect words={['A pan-India', 'Celebrating 12 Years']} />
-            )}
-          </div>
+            </div>
+          ) : (
+            <ParticleTextEffect frames={HERO_FRAMES} className="w-full" />
+          )}
         </motion.div>
       </div>
     </section>
