@@ -11,7 +11,9 @@ export interface SubmitResult {
 }
 
 const USE_REAL_ENDPOINT = true
-const ENDPOINT = 'https://uat.elbrit.org/api/method/trendo_register'
+// Same-origin path proxied to the ERPNext endpoint (see netlify.toml /
+// vite.config.ts). Avoids browser CORS and the preflight that was failing.
+const ENDPOINT = '/api/trendo_register'
 
 // --- Lightweight client-side rate limiting ---------------------------------
 const MIN_SUBMIT_INTERVAL_MS = 4000
@@ -81,6 +83,10 @@ export async function submitForm(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
+    // Surface the server's error body to help diagnose backend (e.g. 500) failures.
+    const detail = await res.text().catch(() => '')
+    // eslint-disable-next-line no-console
+    console.error(`[submitForm] ${res.status} ${res.statusText}`, detail)
     throw new Error(`Submission failed (${res.status})`)
   }
   return { ok: true }

@@ -5,6 +5,15 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Proxy the registration API server-to-server so the browser makes a
+# same-origin request (no CORS, no preflight). MUST come before the SPA
+# catch-all below — Netlify uses the first matching rule.
+[[redirects]]
+  from = "/api/trendo_register"
+  to = "https://uat.elbrit.org/api/method/trendo_register"
+  status = 200
+  force = true
+
 # Single-page app: serve index.html for any route (safe even without routing).
 [[redirects]]
   from = "/*"
