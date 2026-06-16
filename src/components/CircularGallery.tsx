@@ -1,23 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SelectorPanel } from './InteractiveSelector'
+import { Close, ArrowRight } from './Icons'
 
 /**
  * 3D circular (cylinder) gallery — the Calbrit slides arranged around a ring in
- * perspective. Drag / swipe to rotate; it auto-rotates slowly when idle.
- * Works on touch and mouse. Inspired by ravikatiyar162/circular-gallery, but
- * driven by pointer drag instead of page scroll so it doesn't spin the gallery
- * as the rest of the page scrolls.
+ * perspective. Drag / swipe to rotate; it auto-rotates slowly when idle. Tap a
+ * card (without dragging) to open a full-size lightbox carousel.
  */
 export default function CircularGallery({ panels }: { panels: SelectorPanel[] }) {
   const [rotation, setRotation] = useState(0)
   const [active, setActive] = useState(0)
+  const [lightbox, setLightbox] = useState<number | null>(null)
   const draggingRef = useRef(false)
   const interactingRef = useRef(false)
   const lastXRef = useRef(0)
   const movedRef = useRef(0)
+  const activeRef = useRef(0)
   const rafRef = useRef<number | null>(null)
   const idleTimerRef = useRef<number | null>(null)
   const reduceRef = useRef(false)
+  const lbStartX = useRef(0)
 
   const count = panels.length
   const anglePer = 360 / count
@@ -26,10 +28,10 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     reduceRef.current = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   }, [])
 
-  // Gentle auto-rotation while idle.
+  // Gentle auto-rotation while idle (paused while a lightbox is open).
   useEffect(() => {
     const tick = () => {
-      if (!draggingRef.current && !interactingRef.current && !reduceRef.current) {
+      if (!draggingRef.current && !interactingRef.current && !reduceRef.current && lightbox === null) {
         setRotation((r) => r + 0.12)
       }
       rafRef.current = requestAnimationFrame(tick)
@@ -38,12 +40,14 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [])
+  }, [lightbox])
 
-  // Keep the front-facing panel's index in sync for the caption.
+  // Keep the front-facing panel's index in sync.
   useEffect(() => {
     const norm = ((-rotation / anglePer) % count + count) % count
-    setActive(Math.round(norm) % count)
+    const i = Math.round(norm) % count
+    activeRef.current = i
+    setActive(i)
   }, [rotation, anglePer, count])
 
   const pauseAuto = () => {
@@ -69,8 +73,11 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     setRotation((r) => r + dx * 0.45)
   }
   const onPointerUp = () => {
+    if (!draggingRef.current) return
     draggingRef.current = false
     pauseAuto()
+    // A tap (negligible movement) opens the lightbox on the front card.
+    if (movedRef.current < 8) setLightbox(activeRef.current)
   }
 
   const goTo = (i: number) => {
@@ -83,6 +90,26 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
     })
   }
 
+  const lbPrev = () => setLightbox((i) => (i === null ? i : (i - 1 + count) % count))
+  const lbNext = () => setLightbox((i) => (i === null ? i : (i + 1) % count))
+
+  // Keyboard controls + scroll lock while the lightbox is open.
+  useEffect(() => {
+    if (lightbox === null) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightbox(null)
+      else if (e.key === 'ArrowLeft') lbPrev()
+      else if (e.key === 'ArrowRight') lbNext()
+    }
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightbox, count])
+
   return (
     <div className="w-full">
       <div
@@ -90,7 +117,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
         style={{ perspective: '1600px' }}
       >
         <div
-          className="relative h-[340px] w-[230px] cursor-grab [--radius:230px] active:cursor-grabbing sm:h-[420px] sm:w-[300px] sm:[--radius:330px]"
+          className="relative h-[340px] w-[230px] cursor-pointer [--radius:230px] sm:h-[420px] sm:w-[300px] sm:[--radius:330px]"
           style={{
             transformStyle: 'preserve-3d',
             transform: `rotateY(${rotation}deg)`,
@@ -158,7 +185,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
       {/* Hint + dot navigation */}
       <div className="mt-6 flex flex-col items-center gap-3">
         <p className="text-[11px] font-medium uppercase tracking-wider text-navy-400">
-          Drag to rotate
+          Drag to rotate · tap to enlarge
         </p>
         <div className="flex items-center gap-2">
           {panels.map((p, i) => (
@@ -175,6 +202,77 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
           ))}
         </div>
       </div>
+
+      {/* Lightbox carousel */}
+      {lightbox !== null && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-navy-950/90 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label={panels[lightbox].title}
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            <Close className="h-6 w-6" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              lbPrev()
+            }}
+            aria-label="Previous"
+            className="absolute left-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:left-6"
+          >
+            <ArrowRight className="h-6 w-6 rotate-180" />
+          </button>
+
+          <figure
+            className="flex max-h-[90vh] max-w-3xl flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              lbStartX.current = e.clientX
+            }}
+            onPointerUp={(e) => {
+              const dx = e.clientX - lbStartX.current
+              if (dx > 50) lbPrev()
+              else if (dx < -50) lbNext()
+            }}
+          >
+            <img
+              src={panels[lightbox].image}
+              alt={panels[lightbox].alt}
+              className="max-h-[78vh] w-auto max-w-full select-none rounded-xl bg-white object-contain shadow-2xl"
+              draggable={false}
+            />
+            <figcaption className="mt-4 text-center text-white">
+              <p className="text-base font-semibold">{panels[lightbox].title}</p>
+              <p className="text-sm text-white/70">{panels[lightbox].description}</p>
+              <p className="mt-1 text-xs text-white/50">
+                {lightbox + 1} / {count}
+              </p>
+            </figcaption>
+          </figure>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              lbNext()
+            }}
+            aria-label="Next"
+            className="absolute right-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:right-6"
+          >
+            <ArrowRight className="h-6 w-6" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
