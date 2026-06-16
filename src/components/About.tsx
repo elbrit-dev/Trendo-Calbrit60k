@@ -15,9 +15,11 @@ export default function About() {
           </div>
           <div>
             <p className="text-lg leading-relaxed text-navy-700">
-              Elbrit Life Sciences is an Indian pharmaceutical company headquartered in Coimbatore,
-              Tamil Nadu, with a strong cardio-metabolic portfolio and a commitment to clinical
-              evidence.
+              Elbrit Life Sciences is a pharmaceutical company founded in 2014 with the vision of
+              “Making Lives Better” by providing quality healthcare to patients. It is an
+              innovation-driven company specializing in the discovery, development, manufacturing,
+              and marketing of prescription drugs, with a strong focus on cardiovascular, diabetes,
+              neurology, and nutraceuticals markets.
             </p>
             <div className="mt-7">
               <p className="text-sm font-medium text-navy-500">Therapeutic focus areas</p>
