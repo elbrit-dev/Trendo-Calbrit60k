@@ -10,41 +10,41 @@ const NanoCanvas = lazy(() => import('../three/NanoCanvas'))
 
 const STAT_ICONS = [Zap, Atom2, Droplet, Calendar]
 
-// The 5 Calbrit 60K Canva slides (public/assets/1–5.png), shown as expanding panels.
+// The 5 Calbrit 60K slides (public/assets/6–10.png), shown in the gallery.
 const CALBRIT_PANELS: SelectorPanel[] = [
   {
-    image: '/assets/5.png',
+    image: '/assets/6.png',
     alt: 'Calbrit 60K — Cholecalciferol Chewable Tablets 60,000 IU',
     title: 'Calbrit 60K',
     description: 'Cholecalciferol Chewable Tablets 60,000 IU',
     Icon: Sparkles,
   },
   {
-    image: '/assets/2.png',
-    alt: 'Nano in a convenient chewable form',
+    image: '/assets/7.png',
+    alt: 'Nano in a convenient chewable form — powered by HydroX',
     title: 'Nano in a Chewable Form',
     description: 'Convenient nano Vitamin D3',
     Icon: Atom2,
   },
   {
-    image: '/assets/3.png',
-    alt: 'HydroX — a nanoparticle delivery system',
+    image: '/assets/8.png',
+    alt: 'What is HydroX — a nanoparticle delivery system',
     title: 'The HydroX Platform',
     description: 'A nanoparticle delivery system',
     Icon: Beaker,
   },
   {
-    image: '/assets/1.png',
+    image: '/assets/10.png',
     alt: 'Nanotechnology vs conventional D3 — bioavailability advantage',
-    title: 'Nano vs Conventional',
-    description: 'Bioavailability advantage · +36% / +43%',
+    title: 'Nano vs Conventional D3',
+    description: '+36% AUC · +43% Cmax over softgels',
     Icon: Zap,
   },
   {
-    image: '/assets/4.png',
-    alt: "Why Calbrit 60K — India's Vitamin D crisis and particle size",
-    title: 'Why Calbrit 60K',
-    description: "India's Vitamin D crisis · particle size",
+    image: '/assets/9.png',
+    alt: 'Particle size comparison and absorption of Calbrit 60K',
+    title: 'Particle Size & Absorption',
+    description: '~157 nm · rapid dispersion',
     Icon: Droplet,
   },
 ]

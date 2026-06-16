@@ -3,7 +3,6 @@ import Hero from './components/Hero'
 import Calbrit60K from './components/Calbrit60K'
 import About from './components/About'
 import Portfolio from './components/Portfolio'
-import Conference from './components/Conference'
 import RegistrationForm from './components/form/RegistrationForm'
 import Footer from './components/Footer'
 
@@ -22,7 +21,6 @@ export default function App() {
         <Calbrit60K />
         <About />
         <Portfolio />
-        <Conference />
         <RegistrationForm />
       </main>
       <Footer />

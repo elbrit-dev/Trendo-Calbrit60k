@@ -6,7 +6,6 @@ const NAV = [
   { label: 'Calbrit 60K', href: '#calbrit' },
   { label: 'About', href: '#about' },
   { label: 'Products', href: '#products' },
-  { label: 'Conference', href: '#conference' },
   { label: 'Register', href: '#register' },
 ]
 
@@ -64,7 +63,7 @@ export default function Header() {
             </a>
           ))}
           <a
-            href="#conference"
+            href="#register"
             className="group inline-flex items-center gap-1.5 rounded-full bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marine-500 focus-visible:ring-offset-2"
           >
             Visit Us at TRENDO 2026
@@ -103,7 +102,7 @@ export default function Header() {
             </a>
           ))}
           <a
-            href="#conference"
+            href="#register"
             onClick={() => setOpen(false)}
             className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-navy-900 px-4 py-3 text-base font-semibold text-white"
           >
