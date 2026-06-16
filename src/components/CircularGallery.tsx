@@ -14,6 +14,7 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   const [active, setActive] = useState(0)
   const [lightbox, setLightbox] = useState<number | null>(null)
   const draggingRef = useRef(false)
+  const pointerDownRef = useRef(false)
   const interactingRef = useRef(false)
   const lastXRef = useRef(0)
   const movedRef = useRef(0)
@@ -59,22 +60,31 @@ export default function CircularGallery({ panels }: { panels: SelectorPanel[] })
   }
 
   const onPointerDown = (e: React.PointerEvent) => {
-    draggingRef.current = true
+    pointerDownRef.current = true
+    draggingRef.current = false
     movedRef.current = 0
     downTimeRef.current = Date.now()
     lastXRef.current = e.clientX
-    pauseAuto()
   }
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!draggingRef.current) return
+    if (!pointerDownRef.current) return
     const dx = e.clientX - lastXRef.current
     lastXRef.current = e.clientX
     movedRef.current += Math.abs(dx)
-    setRotation((r) => r + dx * 0.45)
+    // Only a real drag (movement) takes over rotation — a still press/long-press
+    // leaves the gallery circulating on its own.
+    if (movedRef.current > 6) draggingRef.current = true
+    if (draggingRef.current) {
+      pauseAuto()
+      setRotation((r) => r + dx * 0.45)
+    }
   }
   const onPointerUp = () => {
-    draggingRef.current = false
-    pauseAuto()
+    pointerDownRef.current = false
+    if (draggingRef.current) {
+      draggingRef.current = false
+      pauseAuto()
+    }
   }
 
   const goTo = (i: number) => {
