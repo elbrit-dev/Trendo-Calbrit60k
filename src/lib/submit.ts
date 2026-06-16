@@ -39,6 +39,14 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v : ''
 }
 
+// Forms Pro Phone fields require a country code (matches the +91-XXXXXXXXXX
+// format the live form submits). React collects a bare 10-digit number.
+function phone(v: unknown): string {
+  const s = str(v).trim()
+  if (!s) return ''
+  return s.startsWith('+') ? s : `+91-${s}`
+}
+
 type FieldEntry = { fieldname: string; value: string | string[] }
 
 // Map form values → Forms Pro form_data entries.
@@ -53,7 +61,7 @@ function toFormData(formType: FormType, data: Record<string, unknown>): FieldEnt
     { fieldname: 'hospital_clinic', value: str(data.hospital) },
     { fieldname: 'city', value: str(data.city) },
     { fieldname: 'professional_email', value: str(data.email) },
-    { fieldname: 'mobile_number', value: str(data.mobile) },
+    { fieldname: 'mobile_number', value: phone(data.mobile) },
     { fieldname: 'clinical_interests', value: list(data.clinicalInterests) },
     { fieldname: 'clinical_interest_other', value: str(data.clinicalInterestsOther) },
     { fieldname: 'products_of_interest', value: list(data.products) },
