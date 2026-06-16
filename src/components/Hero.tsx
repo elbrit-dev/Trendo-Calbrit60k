@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { site } from '../data/site'
 import { ArrowRight } from './Icons'
 import { useShow3D } from '../three/util'
+import ParticleTextEffect from './ParticleTextEffect'
 
 const HeroCanvas = lazy(() => import('../three/HeroCanvas'))
 const INDIA_IMG = '/assets/india-map-country-svgrepo-com.svg'
@@ -91,19 +92,16 @@ export default function Hero() {
             )}
           </div>
 
-          <div className="mx-auto mt-2 max-w-sm text-center lg:-translate-x-8">
-            {show3D && (
-              <p className="pointer-events-none mb-3 text-[11px] font-medium uppercase tracking-wider text-navy-300">
-                Move your cursor
+          {/* Cycling particle text: brand phrases form, dissolve, and reform */}
+          <div className="mt-2 w-full lg:-translate-x-8">
+            {reduce ? (
+              <p className="text-center text-2xl font-semibold text-navy-900">
+                A <span className="text-marine-600">pan-India</span> presence ·{' '}
+                <span className="text-marine-600">Celebrating 12 Years</span>
               </p>
+            ) : (
+              <ParticleTextEffect words={['A pan-India', 'Celebrating 12 Years']} />
             )}
-            <p className="text-2xl font-semibold text-navy-900">
-              A <span className="text-marine-600">pan-India</span> presence
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-navy-600">
-              From metros to emerging towns, Elbrit brings cardio-reno-metabolic and diabetes care
-              within reach of clinicians across the country.
-            </p>
           </div>
         </motion.div>
       </div>
