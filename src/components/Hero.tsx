@@ -6,7 +6,7 @@ import ParticleTextEffect, { type ParticleFrame } from './ParticleTextEffect'
 const INDIA_IMG = '/assets/india-map-country-svgrepo-com.svg'
 
 const HERO_FRAMES: ParticleFrame[] = [
-  { kind: 'text', value: 'A pan-India', color: 'navy' },
+  { kind: 'text', value: 'A Pan-Indian Presence', color: 'navy' },
   { kind: 'text', value: 'Celebrating 12 Years', color: 'marine' },
   { kind: 'image', src: INDIA_IMG, color: 'marine' },
 ]
