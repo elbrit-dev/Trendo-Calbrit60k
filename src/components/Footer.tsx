@@ -1,5 +1,5 @@
 import { site } from '../data/site'
-import { Mail, Phone, MapPin, LinkedIn } from './Icons'
+import { Mail, Phone, MapPin, LinkedIn, ArrowRight } from './Icons'
 
 export default function Footer() {
   return (
@@ -7,25 +7,45 @@ export default function Footer() {
       <div className="mx-auto max-w-content px-5 py-14 sm:px-8 lg:px-12 xl:px-20">
         <div className="grid gap-10 md:grid-cols-3">
           <div>
-            <img
-              src="/assets/elbrit-logo.png"
-              alt="Elbrit Life Sciences"
-              className="h-11 w-auto"
-              width={235}
-              height={52}
-              loading="lazy"
-            />
+            <a href={site.website} target="_blank" rel="noopener noreferrer" aria-label={`${site.company} home`}>
+              <img
+                src="/assets/elbrit-logo.png"
+                alt="Elbrit Life Sciences"
+                className="h-11 w-auto"
+                width={235}
+                height={52}
+                loading="lazy"
+              />
+            </a>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-navy-500">
               Cardio-reno-metabolic care, reimagined. Proudly participating in {site.conference.name}.
             </p>
+            <a
+              href={site.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-marine-700 transition hover:text-marine-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marine-500"
+            >
+              Home
+              <ArrowRight className="h-4 w-4" />
+            </a>
           </div>
 
           <address className="not-italic">
             <p className="text-sm font-semibold uppercase tracking-wider text-navy-400">Contact</p>
             <ul className="mt-4 space-y-3 text-sm text-navy-700">
-              <li className="flex items-start gap-2.5">
-                <MapPin className="mt-0.5 h-4 w-4 flex-none text-marine-600" />
-                <span>{site.contact.addressLines.join(', ')}</span>
+              <li>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    site.contact.addressLines.join(', '),
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2.5 hover:text-marine-700"
+                >
+                  <MapPin className="mt-0.5 h-4 w-4 flex-none text-marine-600" />
+                  {site.contact.addressLines.join(', ')}
+                </a>
               </li>
               <li>
                 <a href={`mailto:${site.contact.email}`} className="flex items-center gap-2.5 hover:text-marine-700">

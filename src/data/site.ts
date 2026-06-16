@@ -3,6 +3,7 @@
 
 export const site = {
   company: 'Elbrit Life Sciences Pvt Ltd',
+  website: 'https://elbrit.org',
   wordmark: 'ELBRIT',
   tagline: 'Cardio-Reno-Metabolic Care, Reimagined.',
   conference: {
@@ -13,7 +14,7 @@ export const site = {
     venue: 'Venue to be announced', // placeholder
   },
   contact: {
-    addressLines: ['Elbrit Life Sciences Pvt Ltd', 'Coimbatore, Tamil Nadu, India'],
+    addressLines: ['Elbrit Life Sciences Private Limited', 'C20, BKC, G Block', 'Mumbai 400051'],
     email: 'hr@elbrit.org',
     phone: '+91 73584 19644',
   },
