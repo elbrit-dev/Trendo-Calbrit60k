@@ -7,7 +7,7 @@ export default defineConfig({
     server: {
         proxy: {
             '/api/forms_pro_submit': {
-                target: 'https://uat.elbrit.org/api/method/forms_pro.api.submission.submit_form_response',
+                target: 'https://erp.elbrit.org/api/method/forms_pro.api.submission.submit_form_response',
                 changeOrigin: true,
                 rewrite: function (path) { return path.replace(/^\/api\/forms_pro_submit/, ''); },
             },

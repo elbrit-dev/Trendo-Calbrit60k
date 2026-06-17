@@ -10,7 +10,7 @@
 # catch-all below — Netlify uses the first matching rule.
 [[redirects]]
   from = "/api/forms_pro_submit"
-  to = "https://uat.elbrit.org/api/method/forms_pro.api.submission.submit_form_response"
+  to = "https://erp.elbrit.org/api/method/forms_pro.api.submission.submit_form_response"
   status = 200
   force = true
 
